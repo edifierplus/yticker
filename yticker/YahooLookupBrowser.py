@@ -1,7 +1,7 @@
 from collections import namedtuple
 
 from pyquery import PyQuery
-from selenium import webdriver
+from requests import get
 
 TickerTuple = namedtuple('Ticker', ['symbol', 'name', 'industry', 'type', 'exchange'])
 
@@ -9,20 +9,9 @@ TickerTuple = namedtuple('Ticker', ['symbol', 'name', 'industry', 'type', 'excha
 class YahooLookupBrowser:
     """The browser simulator to lookup tickers in Yahoo Finance.
     """
+
     def __init__(self):
-        self.browser = self._open_browser()
         self.base_url = "https://finance.yahoo.com/lookup/{category}?s={key}&t=A&b={start}&c={size}"
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.browser.close()
-
-    def _open_browser(self):
-        options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
-        return webdriver.Firefox(options=options)
 
     def lookup(self, key, category='all', start=0, size=100):
         """Lookup tickers in Yahoo Finance.
@@ -37,20 +26,25 @@ class YahooLookupBrowser:
             (list, int): The pair of lookup results in the page and total tickers matching the keyword.
         """
         url = self.base_url.format(category=category, key=key, start=start, size=size)
-        self.browser.get(url)
-        raw_data = PyQuery(self.browser.page_source)
+        response = get(url)
 
+        if not response.ok or 'Will be right back' in response.text:
+            # page temporarily unavailable
+            raise ConnectionRefusedError("Lookup page is temporarily unavailable")
+
+        raw_data = PyQuery(response.text)
         title = raw_data("a[href*=\\/lookup]")[0].find('span').text_content()
         total = int(title[title.find('(') + 1:title.find(')')])
 
         if total == 0:
+            # nothing is in the lookup page, so don't parse it
             return ([], 0)
 
         tbody = raw_data("tbody")
         ans = list()
         for row in tbody[0].findall('tr'):
             td = row.findall("td")
-            td.pop(2)
+            td.pop(2)  # remove latest price
             ans.append(TickerTuple._make(x.text_content() for x in td))
 
         return (ans, total)
