@@ -4,6 +4,7 @@ from pyquery import PyQuery
 from requests import get
 
 TickerTuple = namedtuple('Ticker', ['symbol', 'name', 'industry', 'type', 'exchange'])
+CategoryTuple = namedtuple('Category', ['index', 'code', 'name'])
 
 
 class YahooLookupBrowser:
@@ -12,8 +13,17 @@ class YahooLookupBrowser:
 
     def __init__(self):
         self.base_url = "https://finance.yahoo.com/lookup/{category}?s={key}&t=A&b={start}&c={size}"
+        self.categories = {
+            'all': CategoryTuple(0, 'all', 'All'),
+            'equity': CategoryTuple(1, 'equity', 'Stocks'),
+            'mutualfund': CategoryTuple(2, 'mutualfund', 'Mutual Funds'),
+            'etf': CategoryTuple(3, 'etf', 'ETFs'),
+            'index': CategoryTuple(4, 'index', 'Indices'),
+            'future': CategoryTuple(5, 'future', 'Futures'),
+            'currency': CategoryTuple(6, 'currency', 'Currencies'),
+        }
 
-    def lookup(self, key, category='all', start=0, size=100):
+    def lookup(self, key: str, category: str = 'all', start: int = 0, size: int = 100):
         """Lookup tickers in Yahoo Finance.
 
         Args:
@@ -33,7 +43,9 @@ class YahooLookupBrowser:
             raise ConnectionRefusedError("Lookup page is temporarily unavailable")
 
         raw_data = PyQuery(response.text)
-        title = raw_data("a[href*=\\/lookup]")[0].find('span').text_content()
+        ct = self.categories[category]
+        title = raw_data("a[href*=\\/lookup]")[ct.index].find('span').text_content()
+        assert title.startswith(ct.name)
         total = int(title[title.find('(') + 1:title.find(')')])
 
         if total == 0:
