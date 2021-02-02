@@ -27,7 +27,7 @@ def main():
             seconds = (datetime.now() - t).total_seconds()
             pbar.write(f"query = {queue[idx]} | count = {len(ans)} | total = {total} | seconds = {seconds}")
         except Exception as e:
-            pbar.write(f"error: idx = {idx}, query = {queue[idx]}. " + str(e))
+            pbar.write(f"error (idx = {idx}, query = {queue[idx]}): " + str(e))
             pbar.write("wait for 10 seconds...")
             time.sleep(10)  # s
             continue
