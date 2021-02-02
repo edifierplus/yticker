@@ -3,8 +3,8 @@ from collections import namedtuple
 from pyquery import PyQuery
 from requests import get
 
-TickerTuple = namedtuple('Ticker', ['symbol', 'name', 'industry', 'type', 'exchange'])
-CategoryTuple = namedtuple('Category', ['index', 'code', 'name'])
+TickerTuple = namedtuple('TickerTuple', ['symbol', 'name', 'industry', 'type', 'exchange'])
+CategoryTuple = namedtuple('CategoryTuple', ['index', 'code', 'name'])
 
 
 class YahooLookupBrowser:
